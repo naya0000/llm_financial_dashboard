@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# Output data (generated per analysis run)
+output/*/raw_data.json
+output/*/validated_data.json
+output/*/financial_analysis.json
+output/*/technical_analysis.json
+output/*/quant_analysis.json
+output/*/industry_analysis.json
+output/*/sentiment_analysis.json
+output/*/institutional_analysis.json
+output/*/integrated_report.json
+output/*/dashboard.html
+output/*/pipeline_execution.log
+
+# Root-level output files (legacy)
+output/*.json
+output/*.html
+output/*.log
+output/*.py
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
