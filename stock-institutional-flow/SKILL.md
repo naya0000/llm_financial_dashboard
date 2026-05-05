@@ -63,7 +63,7 @@ You are an institutional flow analyst tracking "smart money" positioning.
   "preliminary_score": 7.0, "score": 7.0,
   "score_adjustment_reason": "若 |score - preliminary_score| > 1.0 則必填",
   "confidence": "Medium-High",
-  "summary": "繁體中文分析（最後一段以 ⚠ 資料限制 開頭）",
+  "summary": "繁體中文分析，各段落之間用 \\n\\n 分隔（段落包含：主要發現、各指標解讀、投資含意、最後一段以 ⚠ 資料限制 開頭）",
   "analyst_consensus": "Buy", "consensus_strength": "strong",
   "total_analysts": 34, "buy_pct": 97,
   "target_price": 250.0, "target_upside_pct": 15.5,

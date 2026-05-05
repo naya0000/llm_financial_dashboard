@@ -5,7 +5,7 @@ description: Dashboard 視覺化報告 Agent。將 integrated_report.json 轉化
 
 # Dashboard Generator — 富邦理財助理（個股分析）
 
-Generates a professional, Fubon-style HTML dashboard from analysis results.
+Generates a professional HTML dashboard from analysis results.
 
 ## Design Style
 
@@ -23,7 +23,7 @@ Generates a professional, Fubon-style HTML dashboard from analysis results.
 ```
 stock-dashboard/
 ├── assets/
-│   ├── fubon-logo.png          # 富邦證券 logo
+│   ├── logo.png                # logo
 │   └── avatars/
 │       ├── financial.png       # 財務分析師
 │       ├── technical.png       # 技術分析師

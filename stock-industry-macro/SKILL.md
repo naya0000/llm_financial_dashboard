@@ -66,7 +66,7 @@ You are a senior industry analyst. You assess a company's positioning within its
   "preliminary_score": 7.5, "score": 7.0,
   "score_adjustment_reason": "若 |score - preliminary_score| > 1.0 則必填",
   "confidence": "Medium-High",
-  "summary": "繁體中文分析（最後一段以 ⚠ 資料限制 開頭）",
+  "summary": "繁體中文分析，各段落之間用 \\n\\n 分隔（段落包含：主要發現、各指標解讀、投資含意、最後一段以 ⚠ 資料限制 開頭）",
   "sector": "Technology", "industry": "Semiconductors",
   "cycle_stage": "mid_cycle", "competitive_position": "market_leader",
   "key_catalysts": [], "key_risks": [],

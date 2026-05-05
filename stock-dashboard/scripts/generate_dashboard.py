@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Stock Dashboard Generator
-Transforms integrated analysis results into a professional, Fubon-style HTML dashboard.
+Transforms integrated analysis results into a professional HTML dashboard.
 """
 
 import json
@@ -64,8 +64,8 @@ def _load_and_cache_base64(cache_key: str, file_path: Path) -> str:
 
 
 def load_logo_base64():
-    """Load Fubon logo as base64 data URI (cached)."""
-    logo_path = Path(__file__).parent.parent / 'assets' / 'fubon-logo.png'
+    """Load logo as base64 data URI (cached)."""
+    logo_path = Path(__file__).parent.parent / 'assets' / 'logo.png'
     return _load_and_cache_base64('logo', logo_path)
 
 
@@ -233,6 +233,12 @@ def generate_html_dashboard(integrated_report, validated_data):
         label_zh, label_en = analyst_labels.get(analyst_name, (analyst_name, analyst_name))
         avatar_uri = load_avatar_base64(analyst_name)
 
+        # Render summary: split on \n\n for paragraphs, \n for line breaks
+        paragraphs = analyst_summary.split('\n\n')
+        summary_html = ''.join(
+            f'<p>{p.replace(chr(10), "<br>")}</p>' for p in paragraphs if p.strip()
+        )
+
         # Build sources HTML for news_sentiment analyst
         sources_html = ""
         if analyst_name == 'news_sentiment':
@@ -266,7 +272,7 @@ def generate_html_dashboard(integrated_report, validated_data):
                     <span class="analyst-arrow">+</span>
                 </div>
             </div>
-            <div class="analyst-detail"><p>{analyst_summary}</p>{sources_html}</div>
+            <div class="analyst-detail"><div class="analyst-summary">{summary_html}</div>{sources_html}</div>
         </div>"""
 
     # Build financial metrics
@@ -519,7 +525,9 @@ def generate_html_dashboard(integrated_report, validated_data):
         .analyst-arrow{{font-size:14px;color:var(--g400);width:20px;text-align:center}}
         .analyst-detail{{max-height:0;overflow:hidden;transition:max-height .3s ease}}
         .analyst-detail.open{{max-height:5000px}}
-        .analyst-detail p{{padding:0 20px 16px 68px;font-size:13px;color:var(--g600);line-height:1.7}}
+        .analyst-summary{{padding:16px 20px 8px 68px}}
+        .analyst-summary p{{font-size:13px;color:var(--g600);line-height:1.8;margin-bottom:12px}}
+        .analyst-summary p:last-child{{margin-bottom:16px}}
         .analyst-sources{{padding:0 20px 16px 68px}}
         .sources-title{{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--g200)}}
         .analyst-sources ul{{list-style:none;padding:0;margin:0}}
@@ -549,9 +557,9 @@ def generate_html_dashboard(integrated_report, validated_data):
         <div class="header-inner">
             <div class="header-top">
                 <div class="brand">
-                    <div class="brand-logo"><img src="{logo_uri}" alt="富邦證券"></div>
+                    <div class="brand-logo"><img src="{logo_uri}" alt="Logo"></div>
                     <div class="brand-divider"></div>
-                    <div class="brand-text"><span class="brand-name">富邦理財助理</span><span class="brand-sub">個股分析</span></div>
+                    <div class="brand-text"><span class="brand-name">理財助理</span><span class="brand-sub">個股分析</span></div>
                 </div>
                 <div class="header-date">分析日期 {analysis_date}</div>
             </div>

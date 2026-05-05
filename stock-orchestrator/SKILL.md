@@ -453,12 +453,38 @@ python {{SKILLS_DIR}}/stock-dashboard/scripts/generate_dashboard.py \
 
 The dashboard script automatically detects the `mode` and `active_analysts` fields from `integrated_report.json` and renders only the relevant sections for selective mode.
 
+### Step 6.5: Post-Report Verification
+
+報告生成後、開啟瀏覽器前，執行事後驗證腳本：
+
+```bash
+python {{SKILLS_DIR}}/stock-data-validator/scripts/verify_report.py \
+  --report {{OUTPUT_DIR}}/{name}/integrated_report.json \
+  --json
+```
+
+解讀驗證結果（JSON 輸出的 `results` 欄位）：
+
+| 區塊 | 說明 | 處理方式 |
+|------|------|---------|
+| `metrics.*` | 報告財務指標 vs yfinance 即時值 | `fail` = 差距超過容差兩倍，告知用戶資料可能過時 |
+| `score_arithmetic` | 加權分驗算 overall_score | `fail`（差 > 1.0）= 報告評分邏輯有誤，標記警告 |
+| `dupont_roe` | DuPont 反推 ROE vs yfinance ROE | `fail`（差 > 40%）= 財務數字內部矛盾，告知用戶 |
+| `yield_crosscheck` | DPS÷股價 vs yfinance dividendYield | `fail`（差 > 25%）= 殖利率數字不一致，告知用戶 |
+| `data_staleness` | 報告日齡 | `fail`（> 30 天）= 建議重新分析 |
+
+**回報規則**：
+- 全部 `pass`：在最終回報中加一行「✓ 事後驗證通過」
+- 有 `warn`：在最終回報中附上「△ 部分指標略超容差：{具體項目}」
+- 有 `fail`：在最終回報中明確告知用戶「⚠ 驗證發現問題：{具體項目與差距}，建議重新抓取資料」
+- 若腳本執行失敗（exit code 非 0/1/2 以外的錯誤）：忽略，繼續開啟 Dashboard
+
 ### Step 7: Open Dashboard
 ```bash
 open {{OUTPUT_DIR}}/{name}/dashboard.html
 ```
 
-Report the overall score and rating to the user.
+Report the overall score, rating, and verification result to the user.
 
 ## Error Handling
 - Data fetch fails → suggest user check ticker format

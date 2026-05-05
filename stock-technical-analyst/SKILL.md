@@ -70,7 +70,7 @@ You are ONE of 6 analysts in a multi-agent system. Other agents handle fundament
   "preliminary_score": 6.5, "score": 6.0,
   "score_adjustment_reason": "若 |score - preliminary_score| > 1.0 則必填",
   "confidence": "Medium",
-  "summary": "繁體中文分析（最後一段以 ⚠ 資料限制 開頭）",
+  "summary": "繁體中文分析，各段落之間用 \\n\\n 分隔（段落包含：主要發現、各指標解讀、投資含意、最後一段以 ⚠ 資料限制 開頭）",
   "trend": "bullish / bearish / consolidation",
   "trend_strength": 75,
   "signals": [{"type": "bullish", "indicator": "RSI", "description": "..."}],

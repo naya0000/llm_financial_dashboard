@@ -11,7 +11,7 @@
 set -e
 
 SKILLS_DIR="$HOME/.claude/skills"
-OUTPUT_DIR="$HOME/fubon-stock-reports"
+OUTPUT_DIR="$HOME/stock-reports"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_FILE="$HOME/.claude/stock-analysis.conf"
 SETTINGS_FILE="$HOME/.claude/settings.json"
@@ -32,7 +32,7 @@ while [[ $# -gt 0 ]]; do
       echo "Usage: ./install.sh [--output-dir <path>] [--auto-permissions]"
       echo ""
       echo "Options:"
-      echo "  --output-dir        Custom output directory for reports (default: ~/fubon-stock-reports)"
+      echo "  --output-dir        Custom output directory for reports (default: ~/stock-reports)"
       echo "  --auto-permissions  Skip permission prompt, auto-configure Claude Code permissions"
       exit 0
       ;;
@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Resolve to absolute path
-OUTPUT_DIR="$(cd "$(dirname "$OUTPUT_DIR")" 2>/dev/null && pwd)/$(basename "$OUTPUT_DIR")" 2>/dev/null || OUTPUT_DIR="$HOME/fubon-stock-reports"
+OUTPUT_DIR="$(cd "$(dirname "$OUTPUT_DIR")" 2>/dev/null && pwd)/$(basename "$OUTPUT_DIR")" 2>/dev/null || OUTPUT_DIR="$HOME/stock-reports"
 
 SKILLS=(
   "stock-orchestrator"
@@ -131,7 +131,7 @@ configure_permissions() {
 import json, sys, os
 
 settings_file = os.path.expanduser("~/.claude/settings.json")
-output_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/fubon-stock-reports")
+output_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/stock-reports")
 skills_dir = os.path.expanduser("~/.claude/skills")
 
 # Permissions required by this plugin

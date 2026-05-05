@@ -27,7 +27,7 @@ while [[ $# -gt 0 ]]; do
       echo "Usage: ./uninstall.sh [--remove-reports] [--keep-permissions]"
       echo ""
       echo "Options:"
-      echo "  --remove-reports    Also delete ~/fubon-stock-reports/"
+      echo "  --remove-reports    Also delete ~/stock-reports/"
       echo "  --keep-permissions  Don't remove plugin permissions from settings.json"
       exit 0
       ;;
@@ -99,7 +99,7 @@ before = len(allow_list)
 allow_list = [p for p in allow_list if not p.endswith(MARKER)]
 
 # Remove output directory
-output_dir = os.path.expanduser("~/fubon-stock-reports")
+output_dir = os.path.expanduser("~/stock-reports")
 additional_dirs = [d for d in additional_dirs if d != output_dir]
 
 removed = before - len(allow_list)
@@ -123,14 +123,14 @@ fi
 
 # Optionally remove reports
 if [ "$REMOVE_REPORTS" = true ]; then
-  OUTPUT_DIR="$HOME/fubon-stock-reports"
+  OUTPUT_DIR="$HOME/stock-reports"
   if [ -d "$OUTPUT_DIR" ]; then
     rm -rf "$OUTPUT_DIR"
     echo "   ✓ Removed reports at $OUTPUT_DIR"
   fi
 else
   echo ""
-  echo "   ℹ  Reports in ~/fubon-stock-reports/ were kept."
+  echo "   ℹ  Reports in ~/stock-reports/ were kept."
   echo "      Use --remove-reports to delete them too."
 fi
 

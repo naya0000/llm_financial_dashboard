@@ -53,7 +53,7 @@ def _color(text: str, code: str, use_color: bool) -> str:
 
 
 def fetch_live(ticker: str) -> dict:
-    """從 yfinance 抓即時財務指標。"""
+    """從 yfinance 抓即時財務指標，並保留原始 info 供 DuPont 計算使用。"""
     info = yf.Ticker(ticker).info
 
     def _pct(key: str) -> Optional[float]:
@@ -76,6 +76,7 @@ def fetch_live(ticker: str) -> dict:
         ),
         "currency":       info.get("currency", ""),
         "company_name":   info.get("longName") or info.get("shortName") or ticker,
+        "_raw_info":      info,  # 保留給 DuPont 和殖利率反推使用
     }
 
 
@@ -175,6 +176,113 @@ def verify_score_arithmetic(report: dict) -> dict:
     }
 
 
+def verify_dupont(live: dict) -> dict:
+    """
+    用 DuPont 公式反推 ROE：淨利率 × 資產周轉率 × 財務槓桿。
+    所有數值從 yfinance info 即時抓取，與報告 ROE 比對。
+    """
+    ticker_obj_info = live.get("_raw_info", {})
+    if not ticker_obj_info:
+        return {"status": "skip", "detail": "缺少原始 yfinance info，無法計算 DuPont"}
+
+    net_margin  = ticker_obj_info.get("profitMargins")       # 淨利率（小數）
+    asset_turn  = ticker_obj_info.get("assetTurnover")       # 資產周轉率
+    total_assets = ticker_obj_info.get("totalAssets")
+    total_equity = ticker_obj_info.get("bookValue")          # per share
+    shares       = ticker_obj_info.get("sharesOutstanding")
+    revenue      = ticker_obj_info.get("totalRevenue")
+    net_income   = ticker_obj_info.get("netIncomeToCommon")
+
+    # 嘗試自己計算缺失的分項
+    if asset_turn is None and total_assets and revenue:
+        asset_turn = revenue / total_assets
+
+    # 財務槓桿 = 總資產 ÷ 股東權益
+    equity_total = None
+    if total_equity and shares:
+        equity_total = total_equity * shares
+    leverage = None
+    if total_assets and equity_total and equity_total > 0:
+        leverage = total_assets / equity_total
+
+    if net_margin is None or asset_turn is None or leverage is None:
+        missing = []
+        if net_margin is None:  missing.append("淨利率")
+        if asset_turn is None:  missing.append("資產周轉率")
+        if leverage is None:    missing.append("財務槓桿")
+        return {"status": "skip", "detail": f"缺少 DuPont 分項資料：{', '.join(missing)}"}
+
+    dupont_roe = net_margin * asset_turn * leverage * 100  # 轉為百分比
+    live_roe   = live.get("roe")  # 已是百分比
+
+    if live_roe is None:
+        return {
+            "status": "warn",
+            "detail": (
+                f"DuPont 反推 ROE={dupont_roe:.2f}%"
+                f"（淨利率={net_margin*100:.1f}% × 資產周轉={asset_turn:.2f} × 槓桿={leverage:.2f}）"
+                f"  |  yfinance ROE 不可用，無法交叉比對"
+            ),
+            "dupont_roe": round(dupont_roe, 2),
+        }
+
+    diff_pct = abs(dupont_roe - live_roe) / abs(live_roe) if live_roe != 0 else float("inf")
+    status = "pass" if diff_pct <= 0.20 else ("warn" if diff_pct <= 0.40 else "fail")
+    return {
+        "status": status,
+        "detail": (
+            f"DuPont 反推={dupont_roe:.2f}%  |  yfinance ROE={live_roe:.2f}%  |  差異={diff_pct*100:+.1f}%"
+            f"（淨利率={net_margin*100:.1f}% × 資產周轉={asset_turn:.2f} × 槓桿={leverage:.2f}）"
+        ),
+        "dupont_roe": round(dupont_roe, 2),
+        "live_roe":   round(live_roe, 2),
+    }
+
+
+def verify_dividend_yield_consistency(live: dict) -> dict:
+    """
+    用 DPS ÷ 股價反推殖利率，確認與 yfinance dividendYield 邏輯一致。
+    DPS = dividendsPerShare（過去 12 個月現金股利）
+    """
+    info = live.get("_raw_info", {})
+    if not info:
+        return {"status": "skip", "detail": "缺少原始 yfinance info"}
+
+    dps   = info.get("lastDividendValue") or info.get("dividendsPerShare")
+    price = info.get("currentPrice") or info.get("regularMarketPrice") or info.get("previousClose")
+    yf_yield = info.get("dividendYield")  # yfinance 的殖利率（小數）
+
+    if dps is None:
+        return {"status": "skip", "detail": "無股利資料（可能為不配息股票）"}
+    if price is None or price == 0:
+        return {"status": "skip", "detail": "無法取得即時股價"}
+
+    computed_yield = (dps / price) * 100  # 轉為百分比
+    yf_yield_pct   = yf_yield * 100 if yf_yield is not None else None
+
+    if yf_yield_pct is None:
+        return {
+            "status": "warn",
+            "detail": (
+                f"DPS÷股價反推殖利率={computed_yield:.2f}%"
+                f"（DPS={dps}，股價={price}）  |  yfinance dividendYield 不可用"
+            ),
+            "computed_yield": round(computed_yield, 2),
+        }
+
+    diff_pct = abs(computed_yield - yf_yield_pct) / abs(yf_yield_pct) if yf_yield_pct != 0 else float("inf")
+    status = "pass" if diff_pct <= 0.10 else ("warn" if diff_pct <= 0.25 else "fail")
+    return {
+        "status": status,
+        "detail": (
+            f"DPS÷股價={computed_yield:.2f}%  |  yfinance yield={yf_yield_pct:.2f}%  |  差異={diff_pct*100:+.1f}%"
+            f"（DPS={dps}，股價={price}）"
+        ),
+        "computed_yield": round(computed_yield, 2),
+        "yf_yield":       round(yf_yield_pct, 2),
+    }
+
+
 def verify_price_staleness(report: dict, live_price: Optional[float]) -> dict:
     """
     檢查報告分析日 vs 今天，並比較報告期間收盤價與即時價的距離。
@@ -254,15 +362,24 @@ def run_verification(report_path: str, global_tolerance: Optional[float],
     score_result = verify_score_arithmetic(report)
     results["score_arithmetic"] = score_result
 
+    # ── 業務邏輯驗算 ──
+    dupont_result   = verify_dupont(live)
+    yield_result    = verify_dividend_yield_consistency(live)
+    results["dupont_roe"]      = dupont_result
+    results["yield_crosscheck"] = yield_result
+
     # ── 資料時效性 ──
     staleness_result = verify_price_staleness(report, live.get("current_price"))
     results["data_staleness"] = staleness_result
+
+    # 輸出時排除內部用的 _raw_info
+    live_output = {k: v for k, v in live.items() if k != "_raw_info"}
 
     if as_json:
         print(json.dumps({
             "ticker": ticker,
             "company_name": company,
-            "live_data": live,
+            "live_data": live_output,
             "report_metrics": report_metrics,
             "results": results,
         }, ensure_ascii=False, indent=2))
@@ -285,6 +402,11 @@ def run_verification(report_path: str, global_tolerance: Optional[float],
             if k in dim:
                 contrib = dim[k] * w
                 print(f"      {k:<15} {dim[k]:.1f} × {w*100:.0f}% = {contrib:.2f}")
+
+    print()
+    print(_color("  【業務邏輯驗算】", ANSI_BOLD, use_color))
+    print_result(dupont_result,  "DuPont 反推 ROE", use_color)
+    print_result(yield_result,   "DPS÷股價→殖利率", use_color)
 
     print()
     print(_color("  【報告時效性】", ANSI_BOLD, use_color))
